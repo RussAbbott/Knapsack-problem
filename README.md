@@ -1,5 +1,5 @@
 # Knapsack-problem
-Various algorithms for solving the knapsack problem. Inspired by the Coursera [Discrete Optimization] (https://www.coursera.org/learn/discrete-optimization/) course.
+Various algorithms for solving the knapsack problem. Inspired by the Coursera [Discrete Optimization](https://www.coursera.org/learn/discrete-optimization/) course.
 
 * __handout.pdf__. The handout for the knapsack homework from the Coursera course.
 
@@ -10,3 +10,6 @@ Various algorithms for solving the knapsack problem. Inspired by the Coursera [D
 * __bb_solver.py__. An implementation of the branch-and-bound solver. Includes additional efficiency measures.
 
 * __data__. A directory of datasets.
+
+
+
