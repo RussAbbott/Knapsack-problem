@@ -9,7 +9,7 @@ Various algorithms for solving the knapsack problem. Inspired by [Week 2](https:
 
 * __bb_solver.py__. An implementation of the branch-and-bound solver. Includes additional efficiency measures.
 
-* __data__. A directory of datasets.
+* __data__. A directory of datasets. One has been added (ks_6x_0). One has been modified from the original (ks_4_1).
 
 
 
