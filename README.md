@@ -7,7 +7,7 @@ Various algorithms for solving the knapsack problem. Inspired by [Week 2](https:
 
 * __basic_solvers.py__. A dynamic programming solver and some greedy solvers.
 
-* __bb_solver.py__. An implementation of the branch-and-bound solver. Includes additional efficiency measures.
+* __bb_solver.py__. An implementation of the branch-and-bound solver discussed in the videos. Includes additional efficiency measures.
 
 * __data__. A directory of datasets. One has been modified from the original (ks_4_1); one has been added (ks_6_0). 
 
