@@ -13,14 +13,14 @@ from bb_solver import bb_solver
 Item = namedtuple("Item", ['index', 'value', 'weight', 'density'])
 
 
-def apply_solver(solver, items_count, capacity, items_sorted_density,
+def apply_solver(solver, items_count, capacity, sorted_items,
                  verbose_outline, verbose_tracking):
     """
 
     :param solver:
     :param items_count: 
     :param capacity: 
-    :param items_sorted_density:
+    :param sorted_items:
     :param verbose_outline:
     :param verbose_tracking:
     :return:
@@ -29,12 +29,12 @@ def apply_solver(solver, items_count, capacity, items_sorted_density,
         print(f'\n{solver.__name__}\n{"".join(["-"]*len(solver.__name__))}')
 
     start = process_time()
-    (value, taken_items_sorted_by_density) = solver(items_count, capacity, items_sorted_density, verbose_tracking)
+    (value, taken_items_sorted_by_density) = solver(items_count, capacity, sorted_items, verbose_tracking)
     elapsed_time = round(process_time() - start, 2)
 
     # Convert the taken items from using the sorted_items indices to using the original indices.
     # Then sort those indices.
-    taken_items = sorted([items_sorted_density[dpbb_index].index for dpbb_index in taken_items_sorted_by_density])
+    taken_items = sorted([sorted_items[dpbb_index].index for dpbb_index in taken_items_sorted_by_density])
     # All results are optimal except greedy_by_density
     is_optimal = int(solver is not greedy_by_density)
     if verbose_outline:
@@ -82,15 +82,15 @@ def solve_a_dataset(input_data,
                                       f'{equals_line}')
     # Each result is (value, opt, taken)
     items = [make_an_Item(i, *map(int, lines[i + 1].split())) for i in range(items_count)]
-    items_sorted_density: List[Item] = sorted(items, key=lambda item: item.density, reverse=True)
+    sorted_items: List[Item] = sorted(items, key=lambda item: item.density, reverse=True)
     if tracking_verbosity:
         print('\nItems')
         for (n, item) in enumerate(items):
             print(f'{n}. {item}')
         print('\nDensity-sorted items')
-        for (n, item) in enumerate(items_sorted_density):
+        for (n, item) in enumerate(sorted_items):
             print(f'{n}. {item}')
-    results = [apply_solver(solver, items_count, capacity, items_sorted_density,
+    results = [apply_solver(solver, items_count, capacity, sorted_items,
                             verbose_outline, verbose_tracking)
                for solver in solvers]
 
