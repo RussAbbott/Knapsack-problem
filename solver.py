@@ -7,62 +7,53 @@ from time import process_time
 from typing import List
 
 from basic_solvers import dynamic_prog, greedy_by_density
-from bb_solver import BBSolver
+from bb_solver import bb_solver
 
 
 Item = namedtuple("Item", ['index', 'value', 'weight', 'density'])
 
 
-def make_Item(index, value, weight):
-    """
-
-    :param index: 
-    :param value: 
-    :param weight: 
-    :return: 
-    """
-    return Item(index, value, weight, value/weight)
-
-
-def apply_solver(solver, items_count, capacity, density_sorted_items,
+def apply_solver(solver, items_count, capacity, items_sorted_density,
                  verbose_outline, verbose_tracking):
     """
 
     :param solver:
     :param items_count: 
     :param capacity: 
-    :param density_sorted_items:
+    :param items_sorted_density:
     :param verbose_outline:
     :param verbose_tracking:
     :return:
     """
-    print(f'\n{solver.__name__}\n{"".join(["-"]*len(solver.__name__))}')
+    if verbose_outline:
+        print(f'\n{solver.__name__}\n{"".join(["-"]*len(solver.__name__))}')
 
     start = process_time()
-    (value, taken_density_sorted_items) = solver(items_count, capacity, density_sorted_items, verbose_tracking)
-    elapsed_time = process_time() - start
+    (value, taken_items_sorted_by_density) = solver(items_count, capacity, items_sorted_density, verbose_tracking)
+    elapsed_time = round(process_time() - start, 2)
 
-    taken_items = sorted(
-        [density_sorted_items[dpbb_index].index for dpbb_index in taken_density_sorted_items])
+    # Convert the taken items from using the sorted_items indices to using the original indices.
+    # Then sort those indices.
+    taken_items = sorted([items_sorted_density[dpbb_index].index for dpbb_index in taken_items_sorted_by_density])
     # All results are optimal except greedy_by_density
+    is_optimal = int(solver is not greedy_by_density)
     if verbose_outline:
         print(f' -> Elapsed time: {elapsed_time} sec')
-        output_data = f'{value} {int(solver is not greedy_by_density)}\n{taken_items}'
+        output_data = f'{value} {is_optimal}\n{taken_items}'
         print(output_data)
 
-    return (value, int(solver is not greedy_by_density), taken_items)
+    return (value, is_optimal, taken_items)
 
 
-def bb_solver(items_count, capacity, density_sorted_items, verbose_tracking):
+def make_an_Item(index, value, weight):
     """
-    Run the bb_solver.
-    :param density_sorted_items:
-    :param items_count:
-    :param capacity: 
-    :param verbose_tracking:
+
+    :param index:
+    :param value:
+    :param weight:
     :return:
     """
-    return BBSolver(items_count, capacity, density_sorted_items, verbose_tracking)()
+    return Item(index=index, value=value, weight=weight, density=value/weight)
 
 
 def solve_a_dataset(input_data,
@@ -71,7 +62,8 @@ def solve_a_dataset(input_data,
                     verbose_outline=False,
                     verbose_tracking=False):
     """
-    
+    Run the indicated solvers on the input_data dataset.
+    Select the best result.    
     :param input_data:
     :param solvers:
     :param prob_nbr:
@@ -89,16 +81,16 @@ def solve_a_dataset(input_data,
                                       f' {problem_size} million\n'
                                       f'{equals_line}')
     # Each result is (value, opt, taken)
-    items = [make_Item(i, *map(int, lines[i + 1].split())) for i in range(items_count)]
-    density_sorted_items: List[Item] = sorted(items, key=lambda item: item.density, reverse=True)
+    items = [make_an_Item(i, *map(int, lines[i + 1].split())) for i in range(items_count)]
+    items_sorted_density: List[Item] = sorted(items, key=lambda item: item.density, reverse=True)
     if tracking_verbosity:
         print('\nItems')
         for (n, item) in enumerate(items):
             print(f'{n}. {item}')
         print('\nDensity-sorted items')
-        for (n, item) in enumerate(density_sorted_items):
+        for (n, item) in enumerate(items_sorted_density):
             print(f'{n}. {item}')
-    results = [apply_solver(solver, items_count, capacity, density_sorted_items,
+    results = [apply_solver(solver, items_count, capacity, items_sorted_density,
                             verbose_outline, verbose_tracking)
                for solver in solvers]
 
@@ -114,23 +106,29 @@ def solve_a_dataset(input_data,
 if __name__ == '__main__':
     # Run the program on some data sets.
     for (prob_nbr, file_location) in enumerate(
-        # This first empty list lets you add other file names to it.
+        # This empty list lets you add other file names to it.
         []
         # This is the first file in the data folder. It is very small and good for a first test of your solver.
-        # The homework sheet has a trace produced by one of the solvers. 
-        # + ['./data/ks_4_0']
-        
-        # These are the data sets the system uses for testing. Add or comment out the ones you want/don't want.
-        + ['./data/ks_30_0']
-        + ['./data/ks_50_0']
-        + ['./data/ks_200_0']
-        + ['./data/ks_400_0']
-        + ['./data/ks_1000_0']
-        + ['./data/ks_10000_0']
-        ):
-        # Reads/treats the entire file as a single string.
-        solvers = (greedy_by_density, bb_solver, dynamic_prog)
+        # The homework sheet has a trace produced by an earlier version of the bb_solver.
+        #      Timings in seconds:    bb          dp
+        # + ['./data/ks_4_0']         # 0.0         0.0
+        # + ['./data/ks_6_0']         # 0.0         0.0
 
+        # These are the data sets the system uses for testing. Add or comment out the ones you want/don't want to try.
+        # Coursera numbers these data sets 1 - 6.
+        #                                           Problem size    Time in seconds
+        #                               Solution    in millions      bb   bb+gbd         dp
+        # + ['./data/ks_30_0']       #    99798          3          0.11   0.12         3.42
+        # + ['./data/ks_50_0']       #   142156         17          0.02   0.00        19.7
+        # + ['./data/ks_200_0']      #   100236         20          0.75   0.56        19.62
+        # + ['./data/ks_400_0']      #  3967180       3795          2.75   3.36      4335.46 =  72.26 min
+        # + ['./data/ks_1000_0']     #   109899        100          0.41   0.48       119.01 =   1.98 min
+        + ['./data/ks_10000_0']    #  1099893      10000          4.46   4.78     13170.43 = 219.51 min = 3.66 hours
+        ):
+
+        solvers = (bb_solver, )  #(greedy_by_density, bb_solver, dynamic_prog)
+
+        # Reads/treats the entire file as a single string.
         input_data = open(file_location, 'r').read()
 
         # If True, show the solvers used and the results they achieve
@@ -139,7 +137,7 @@ if __name__ == '__main__':
         # If True, show some of the details of how the solvers run.
         tracking_verbosity = False
 
-        submission = solve_a_dataset(input_data, solvers, prob_nbr+1, verbose_outline, tracking_verbosity)
+        submission = solve_a_dataset(input_data, solvers, prob_nbr, verbose_outline, tracking_verbosity)
 
         # To run this for submission, you will have to get it to work as called by submit.py -- with no
         # additional output.

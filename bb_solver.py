@@ -7,9 +7,21 @@ from collections import namedtuple
 
 # You can read about Python's Priority Queue here: https://dbader.org/blog/priority-queues-in-python
 from queue import PriorityQueue
-
 from random import randint
 from typing import List
+
+
+def bb_solver(items_count, capacity, items_sorted_density, verbose_tracking):
+    """
+    Run the bb_solver.
+    :param items_sorted_density:
+    :param items_count:
+    :param capacity:
+    :param verbose_tracking:
+    :return:
+    """
+    # Note the pair of parentheses at the end of the next line. What do they do?
+    return BBSolver(items_count, capacity, items_sorted_density, verbose_tracking)()
 
 
 Selection = namedtuple('Selection', ['sorted_index', 'value', 'room', 'max_value', 'taken_sorted'])
@@ -28,8 +40,10 @@ class BBSolver:
         self.pushes = 0
         self.frontier = PriorityQueue()
         self.expanded = {}
+
         # The following is a dummy element used to start building the queue.
-        self.best_selection = Selection(-1, 0, self.capacity, self.capacity*self.sorted_items[0].density, [])
+        self.best_selection = Selection(sorted_index=-1, value=0, room=capacity,
+                                        max_value=capacity*self.sorted_items[0].density, taken_sorted=[])
         # Expand self.best_selection to put the first two elements into the queue.
         # They are: take or don't take the first element of sorted_items.
         self.expand_and_enqueue(self.best_selection)
@@ -93,8 +107,8 @@ class BBSolver:
         Expand selecction in two ways: include or don't include the next item in the sorted_items list.
         :param selection:
         """
-        # Add this item's (value, weight) to the expanded set.
-        # Don't add anything for the initial selection, with index -1.
+        # Add this item's (value, room) to the expanded set.
+        # Don't add anything for the initial selection, with sorted_index -1.
         if selection.sorted_index >= 0:
             self.expanded[selection.sorted_index] = \
                 self.expanded.get(selection.sorted_index, set()) | {(selection.value, selection.room)}
@@ -103,9 +117,6 @@ class BBSolver:
 
         future_density = 0 if future_index >= self.items_count else \
                          self.sorted_items[future_index].density
-
-        # if selection.sorted_index == -1:
-        #     print('At -1')
 
         expanded_selections: List[Selection] = [fn(selection, future_density)
                                                 for fn in [self.decline_next_item, self.take_next_item]]
@@ -181,7 +192,7 @@ class BBSolver:
         return (-self.pushes, selection)
 
         # FIFO:
-        # return (self.count, selection)
+        # return (self.pushes, selection)
 
     def take_next_item(self, selection: Selection, future_density):
         """
