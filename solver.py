@@ -134,7 +134,7 @@ if __name__ == '__main__':
         # The homework sheet has a trace produced by an earlier version of the bb_solver.
         #                             Solution
         + ['./data/ks_4_0']         #    19
-        + ['./data/ks_6_0']         #    28
+        # + ['./data/ks_6_0']         #    28
 
         # These are the data sets the system uses for testing. Add or comment out the ones you want/don't want to try.
         # Coursera numbers these data sets 1 - 6.
