@@ -11,12 +11,13 @@ from random import randint
 from typing import List
 
 
-def bb_solver(items_count, capacity, items_sorted_density, verbose_tracking):
+def bb_solver(_greedy_value, items_count, capacity, items_sorted_density, verbose_tracking):
     """
     Run the bb_solver.
-    :param items_sorted_density:
+    :param _greedy_value:
     :param items_count:
     :param capacity:
+    :param items_sorted_density:
     :param verbose_tracking:
     :return:
     """
@@ -43,7 +44,7 @@ class BBSolver:
 
         # The following is a dummy element used to start building the queue.
         self.best_selection = Selection(sorted_index=-1, value=0, room=capacity,
-                                        max_value=capacity*self.sorted_items[0].density, taken_sorted=[])
+                                         max_value=capacity*self.sorted_items[0].density, taken_sorted=[])
         # Expand self.best_selection to put the first two elements into the queue.
         # They are: take or don't take the first element of sorted_items.
         self.expand_and_enqueue(self.best_selection)
@@ -84,18 +85,21 @@ class BBSolver:
         return False
 
     # noinspection PyMethodMayBeStatic
-    def decline_next_item(self, selection: Selection, future_density):
+    @staticmethod
+    def decline_next_item(selection: Selection, next_sorted_index, _next_sorted_item, future_density):
         """
         Don't include the next sorted item. The new Selection will be the same as the
         current one except with its sorted_index incremented to next_sorted_index.
 
-        :param future_density:
         :param selection:
+        :param next_sorted_index:
+        :param _next_sorted_item:
+        :param future_density:
         :return:
         """
         max_value = selection.value + selection.room * future_density
         next_selection = \
-            Selection(sorted_index=selection.sorted_index + 1,
+            Selection(sorted_index=next_sorted_index,
                       value=selection.value,
                       room=selection.room,
                       max_value=max_value,
@@ -118,7 +122,11 @@ class BBSolver:
         future_density = 0 if future_index >= self.items_count else \
                          self.sorted_items[future_index].density
 
-        expanded_selections: List[Selection] = [fn(selection, future_density)
+        next_sorted_index = selection.sorted_index + 1
+        # This is the "next" item of the sorted_items linst. It may be included in the Selection.
+        next_sorted_item = self.sorted_items[next_sorted_index]
+
+        expanded_selections: List[Selection] = [fn(selection, next_sorted_index, next_sorted_item, future_density)
                                                 for fn in [self.decline_next_item, self.take_next_item]]
         new_selections = [sel for sel in expanded_selections
                           if not self.too_heavy(sel) and not self.too_small(sel)]
@@ -140,7 +148,7 @@ class BBSolver:
             else:
                 print(f'\nNo viable successors of {selection}.')
 
-    def print_frontier(self, n=5):
+    def print_frontier(self, n=15):
         """
         :param n: Maximum elements to print
         :return:
@@ -194,16 +202,17 @@ class BBSolver:
         # FIFO:
         # return (self.pushes, selection)
 
-    def take_next_item(self, selection: Selection, future_density):
+    # noinspection PyMethodMayBeStatic
+    @staticmethod
+    def take_next_item(selection: Selection, next_sorted_index, next_sorted_item, future_density):
         """
         Include the next items from sorted_items in the selection. (See also decline_next_item.)
         :param selection:
+        :param next_sorted_index:
+        :param next_sorted_item:
         :param future_density:
         :return:
         """
-        next_sorted_index = selection.sorted_index + 1
-        # This is the "next" item of the sorted_items linst. It will be included in the Selection.
-        next_sorted_item = self.sorted_items[next_sorted_index]
         # Build the new Selection.
         next_selection_value = selection.value + next_sorted_item.value
         next_selection_room = selection.room - next_sorted_item.weight
@@ -235,17 +244,26 @@ class BBSolver:
         The more you can eliminate--and keep from being added to the queue, the
         faster the program will run. Is this the best way to test? It seems
         very ad hoc.
+
         :return:
         """
-        if selection.max_value < self.best_selection.value \
+        """
+           selection.max_value < self.best_selection.value \
            or \
            selection.max_value == self.best_selection.value and (
            selection.sorted_index < self.best_selection.sorted_index
            or
            selection.sorted_index >= self.best_selection.sorted_index and
            selection.value <= self.best_selection.value):
-            if self.tracking_verbosity:
-                print(f'X-Too small-X: {selection} vs\n'
-                      f'               {self.best_selection})')
+        """
+        too_small = (
+                     selection.max_value < self.best_selection.value
+                     or
+                     selection.max_value == self.best_selection.value
+                     and selection.sorted_index >= self.best_selection.sorted_index
+                    )
+        if too_small and self.tracking_verbosity:
+            print(f'X-Too small-X: {selection} vs\n'
+                  f'               {self.best_selection})')
             return True
-        return False
+        return too_small
